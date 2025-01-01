@@ -4,10 +4,15 @@ QOF is the simple vector font format and library. QOF isn't the most efficient, 
 ### Important Notes
 The QOF binary format has reached the point where it should be stable and never change unless I have made some big oversight in the format. The renderer is functional, but is still work in progress and so it doesn't support multi-glyph per character rendering and doesn't use subpixel font rendering yet. The converter still requires big performance and output size optimizations. The font editor has not been started yet. Currently the only functioning implementation is the JavaScript one.
 
-
 ### How simple?
 The TTF specification is 922,829 words long while the QOF specification is 1,158 words.  
 Freetype is ~160,300 lines of code while my QOF implementation is ~700 lines of code.
+
+## Resources
+- [Online QOF Converter](https://vexcess.github.io/QOF/converter.html)
+- [Online QOF Demo](https://vexcess.github.io/QOF/src/javascript/demo.html)
+- [Documentation](https://github.com/vExcess/QOF/blob/main/documentation.md)
+- [Specification](https://github.com/vExcess/QOF/blob/main/specification.md)
 
 ## Why?
 So you want to encode and render fonts? the most fundamental task in creating a GUI. Lets look at your options:
@@ -59,9 +64,6 @@ A font renderer's usefulness is directly correlated to the amount of fonts avail
 
 ## Font Editor
 The automatic font converter will not reproduce the original font perfectly and there may be undesirable defects in the converted font. So I am also providing a QOF font editor where QOF fonts can be edited to perfection. The QOF editor will even provide the option to automatically compute kerning pairs. Fancy!
-
-## Specification
-Insert link here
 
 ## TODO
 - Create font editor
