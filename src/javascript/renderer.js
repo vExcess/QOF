@@ -9,12 +9,17 @@
         // render the glyph
         let i = 0;
         let isShapeStart = true;
+        var startX = 0;
+        var startY = 0;
         while (i < glyph.length) {
             let shape = glyph[i];
             if (shape === HOLE) {
                 i++;
-                isShapeStart = true;
-                ctx.fill();
+                if (!isShapeStart) {
+                    isShapeStart = true;
+                    ctx.closePath();
+                    ctx.fill();
+                }
                 // hole shapes are white
                 ctx.fillStyle = "rgb(255, 255, 255)";
             }
@@ -33,9 +38,17 @@
                 const xPos = x + glyph[i+1] * sz;
                 const yPos = y + glyph[i+2] * sz;
                 if (isShapeStart) {
+                    startX = xPos;
+                    startY = yPos;
                     ctx.moveTo(xPos, yPos);
                 } else {
                     ctx.lineTo(xPos, yPos);
+                    if (xPos === startX && yPos === startY) {
+                        isShapeStart = true;
+                        ctx.fill();
+                        i += 3;
+                        continue;
+                    }
                 }
                 
                 i += 3;
@@ -45,6 +58,13 @@
                 const xPos = x + glyph[i+3] * sz;
                 const yPos = y + glyph[i+4] * sz;
                 ctx.quadraticCurveTo(cpxPos, cpyPos, xPos, yPos);
+
+                // if (xPos === startX && yPos === startY) {
+                //     isShapeStart = true;
+                //     ctx.fill();
+                //     i += 5;
+                //     continue;
+                // }
                 
                 i += 5;
             }
@@ -53,8 +73,9 @@
                 isShapeStart = false;
             }
             
-            // fill glpyh if we've reached the end of the glyph data
+            // fill glyph if we've reached the end of the glyph data
             if (i === glyph.length) {
+                ctx.closePath();
                 ctx.fill();
             }
         }
@@ -68,16 +89,16 @@
 
         const cacheKey = font.name + " " + sz + " " + char;
         if (metrics.actualWidth === 0 || metrics.actualHeight === 0) {
-            bitmapCache[cacheKey] = 0;
+            bitmapCache[cacheKey] = null;
         } else {
             let canvas = document.createElement("canvas");
-            canvas.width = metrics.actualWidth + 1;
-            canvas.height = metrics.actualHeight + 1;
+            canvas.width = Math.round(metrics.actualWidth + 1);
+            canvas.height = Math.round(metrics.actualHeight + 1);
             let ctx = canvas.getContext("2d");
 
             canvas.style.border = "1px solid red";
             canvas.style.padding = "0px";
-            // document.body.append(canvas);
+            document.body.append(canvas);
 
             const x = metrics.actualBoundingBoxLeft;
             const y = metrics.actualBoundingBoxAscent;
@@ -95,27 +116,9 @@
             let usedPixLen = pix.length;
             let usedCanvasHeight = canvas.height;
 
-            // check if last row is used
-            let lastRowUsed = false;
-            // console.log(char, canvas.width, canvas.height)
-            let usedCount = 0;
-            for (let i = ((canvas.height - 1) * canvas.width) << 2; i < usedPixLen; i += 4) {
-                // console.log(pix[i], pix[i+3])
-                if (pix[i] === 0 && pix[i+3] > 40) {
-                    usedCount++;
-                    // ignore single pixels
-                    if (usedCount >= sz*0.05) {
-                        lastRowUsed = true;
-                        break;
-                    }
-                }
-            }
-            if (!lastRowUsed) {
-                usedCanvasHeight--;
-                usedPixLen -= canvas.width << 2;
-                // canvas.height--;
-                // ctx.putImageData(imgData, 0, 0)
-                // canvas.style.border = "1px solid green";
+            // console.log(char, Math.abs(canvas.height - metrics.actualHeight))
+            if (canvas.height - metrics.actualHeight > 0.3) {
+                canvas.style.border = "1px solid blue";
             }
 
             let cacheBitmap = new Uint8Array(usedPixLen / 4);
@@ -131,7 +134,10 @@
                 cacheBitmap[i / 4] = pix[i];
             }
 
-            bitmapCache[cacheKey] = [cacheBitmap, x, y, canvas.width, usedCanvasHeight, lastRowUsed];
+            bitmapCache[cacheKey] = {
+                bitmap: cacheBitmap,
+                box: [x, y, canvas.width, usedCanvasHeight]
+            };
         }
     }
 
@@ -148,6 +154,59 @@
         pixels[idx  ] = oR + nR;
         pixels[idx+1] = oG + nG;
         pixels[idx+2] = oB + nB;
+    }
+
+    function renderBitmapGlyph(dest, bitmap, bitmapWidth, clr) {
+        let pix = dest.data;
+        // if (clr[3] === 255) {
+        //     for (let i = 0; i < pix.length; i += 4) {
+        //         const dx = (i >> 2) % dest.width;
+        //         const dy = ((i >> 2) / dest.width)|0;
+        //         const dIdx = ((dx|0) + (dy|0) * dest.width) << 2;
+        //         const bIdx = (dx*2 + dy*2 * bitmapWidth) << 0;
+        //         // console.log(bIdx, bitmap.length)
+        //         if (bitmap[bIdx] !== 255) {
+        //             if (bitmap[bIdx] === 0) {
+        //                 pix[dIdx] = clr[0];
+        //                 pix[dIdx+1] = clr[1];
+        //                 pix[dIdx+2] = clr[2];
+        //             } else {
+        //                 compositePixel(pix, dIdx, clr[0], clr[1], clr[2], 255-bitmap[bIdx]);
+        //             }
+        //         }
+        //         // pix[dIdx] = dx * 20;
+        //         // pix[dIdx+1] = dy * 20;
+        //         // pix[dIdx+2] = 0;
+        //     }
+        // } else {
+        //     // for (let i = 0; i < pix.length; i += 4) {
+        //     //     const bIdx = i / 4;
+        //     //     if (bitmap[bIdx] !== 255) {
+        //     //         compositePixel(pix, i, clr[0], clr[1], clr[2], clr[3]-(bitmap[bIdx]/255*clr[3]));
+        //     //     }
+        //     // }
+        // }
+        if (clr[3] === 255) {
+            for (let i = 0; i < pix.length; i += 4) {
+                const bIdx = i / 4;
+                if (bitmap[bIdx] !== 255) {
+                    if (bitmap[bIdx] === 0) {
+                        pix[i] = clr[0];
+                        pix[i+1] = clr[1];
+                        pix[i+2] = clr[2];
+                    } else {
+                        compositePixel(pix, i, clr[0], clr[1], clr[2], 255-bitmap[bIdx]);
+                    }
+                }
+            }
+        } else {
+            for (let i = 0; i < pix.length; i += 4) {
+                const bIdx = i / 4;
+                if (bitmap[bIdx] !== 255) {
+                    compositePixel(pix, i, clr[0], clr[1], clr[2], clr[3]-(bitmap[bIdx]/255*clr[3]));
+                }
+            }
+        }
     }
 
     function renderText(ctx, txt, x, y, myFont, sz, clr, wrapWidth) {
@@ -183,14 +242,13 @@
                 }
                 
                 // render the glyph
-                if (bitmapCache[cacheKey] !== 0) {
+                if (bitmapCache[cacheKey] !== null) {
                     const cachedData = bitmapCache[cacheKey];
-                    const bitmap = cachedData[0];
-                    const cacheXOff = cachedData[1];
-                    const cacheYOff = cachedData[2]; 
-                    const cacheWidth = cachedData[3];
-                    const cacheHeight = cachedData[4];
-                    const lastRowUsed = cachedData[5];
+                    const bitmap = cachedData.bitmap;
+                    const cacheXOff = cachedData.box[0];
+                    const cacheYOff = cachedData.box[1]; 
+                    const cacheWidth = cachedData.box[2];
+                    const cacheHeight = cachedData.box[3];
 
                     // apply kerning
                     const kern = myFont.kerning[line.charAt(t-1) + char];
@@ -199,45 +257,24 @@
                     }
 
                     const xPos = Math.round(x + xOff + cacheXOff);
-                    let yPos = (y - cacheYOff);
-                    // console.log("AAAAAAAAAAAAAAAAAAAA", char, yPos + cacheHeight, y)
+                    let yPos = y - cacheYOff + 1; // +1 for canvas height pad
                     if (yPos + cacheHeight < Math.round(y)) {
-                        yPos++;
+                        yPos = Math.ceil(yPos);
+                    } else {
+                        yPos = yPos | 0;
                     }
-                    // if (yPos + cacheHeight > Math.round(y)) {
-                    //     yPos--;
-                    // }
-                    yPos = yPos | 0;
-
+                    
                     ctx.strokeStyle = "rgba(255, 0, 0, 100)"
                     // ctx.strokeRect(xPos, yPos, cacheWidth, cacheHeight);
-                    // console.log(char, yPos + cacheHeight, y)
+                    
                     if (cacheWidth !== 0 && cacheHeight !== 0) {
                         let imgData = ctx.getImageData(xPos, yPos, cacheWidth, cacheHeight);
-                        let pix = imgData.data;
-                        if (clr[3] === 255) {
-                            for (let i = 0; i < pix.length; i += 4) {
-                                const bIdx = i / 4;
-                                if (bitmap[bIdx] !== 255) {
-                                    if (bitmap[bIdx] === 0) {
-                                        pix[i] = clr[0];
-                                        pix[i+1] = clr[1];
-                                        pix[i+2] = clr[2];
-                                    } else {
-                                        compositePixel(pix, i, clr[0], clr[1], clr[2], 255-bitmap[bIdx]);
-                                    }
-                                }
-                            }
-                        } else {
-                            for (let i = 0; i < pix.length; i += 4) {
-                                const bIdx = i / 4;
-                                if (bitmap[bIdx] !== 255) {
-                                    compositePixel(pix, i, clr[0], clr[1], clr[2], clr[3]-(bitmap[bIdx]/255*clr[3]));
-                                }
-                            }
-                        }
+                        renderBitmapGlyph(imgData, bitmap, cacheWidth, clr);
                         ctx.putImageData(imgData, xPos, yPos);
                     }
+
+                    const glyph = myFont.glyphs[glyphInfo.index1];
+                    // renderGlyph(ctx, glyph, x + xOff, y, sz);
                 }
                 
                 // update glyph x offset

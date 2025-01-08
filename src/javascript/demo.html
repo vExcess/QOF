@@ -10,7 +10,12 @@
 			font-family: sans-serif;
 		}
 
+		input[type="range"] {
+			width: 192px;
+		}
+
 		@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Protest+Guerrilla&display=swap');
+		@import url('https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 	</style>
 </head>
 <body>
@@ -30,103 +35,12 @@
     <canvas id="myCanvas" width="800" height="600" style="border: 1px solid black;"></canvas>
 
     <script>
-/*
-Copyright (c) 2011, Daniel Guerrero
-All rights reserved.
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
-    * Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-    * Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-DISCLAIMED. IN NO EVENT SHALL DANIEL GUERRERO BE LIABLE FOR ANY
-DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-const Base64 = {
-	_keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-
-	Uint8ToB64: async function(arr) {
-		const b64URL = await new Promise(resolve => {
-			const reader = new FileReader();
-			reader.onload = () => resolve(reader.result.slice(reader.result.indexOf(",") + 1));
-			reader.readAsDataURL(new Blob([arr]));
-		});
-		return b64URL;
-	},
-	
-	/* will return a  Uint8Array type */
-	decodeArrayBuffer: function(input) {
-		var bytes = (input.length/4) * 3;
-		var ab = new ArrayBuffer(bytes);
-		this.decode(input, ab);
-		
-		return ab;
-	},
-
-	removePaddingChars: function(input){
-		var lkey = this._keyStr.indexOf(input.charAt(input.length - 1));
-		if(lkey == 64){
-			return input.substring(0,input.length - 1);
-		}
-		return input;
-	},
-
-	decode: function (input, arrayBuffer) {
-		//get last chars to see if are valid
-		input = this.removePaddingChars(input);
-		input = this.removePaddingChars(input);
-
-		var bytes = parseInt((input.length / 4) * 3, 10);
-		
-		var uarray;
-		var chr1, chr2, chr3;
-		var enc1, enc2, enc3, enc4;
-		var i = 0;
-		var j = 0;
-		
-		if (arrayBuffer)
-			uarray = new Uint8Array(arrayBuffer);
-		else
-			uarray = new Uint8Array(bytes);
-		
-		input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-		
-		for (i=0; i<bytes; i+=3) {	
-			//get the 3 octects in 4 ascii chars
-			enc1 = this._keyStr.indexOf(input.charAt(j++));
-			enc2 = this._keyStr.indexOf(input.charAt(j++));
-			enc3 = this._keyStr.indexOf(input.charAt(j++));
-			enc4 = this._keyStr.indexOf(input.charAt(j++));
-	
-			chr1 = (enc1 << 2) | (enc2 >> 4);
-			chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-			chr3 = ((enc3 & 3) << 6) | enc4;
-	
-			uarray[i] = chr1;			
-			if (enc3 != 64) uarray[i+1] = chr2;
-			if (enc4 != 64) uarray[i+2] = chr3;
-		}
-	
-		return uarray;	
-	}
-}
-
 const canvas = document.getElementById("myCanvas");
 const ctx = canvas.getContext("2d");
 
 let slider = document.getElementById("font-size");
 
-const sampleText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. á, é, í, ó, ú, ü, ñ, ¿, ¡";
+let sampleText = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. á, é, í, ó, ú, ü, ñ, ¿, ¡";
 
 function getLines(ctx, text, maxWidth) {
 	var words = text.split(" ");
@@ -147,34 +61,34 @@ function getLines(ctx, text, maxWidth) {
 	return lines;
 }
 
-// function renderTextMetrics(ctx, txt, x, y, myFont, sz) {
-// 	const lines = txt.split("\n");
+function renderTextMetrics(ctx, txt, x, y, myFont, sz) {
+	const lines = txt.split("\n");
 	
-// 	ctx.lineWidth = "1";
-// 	for (let l = 0; l < lines.length; l++) {
-// 		const line = lines[l];
-// 		const metrics = measureText(line, myFont, sz);
+	ctx.lineWidth = "1";
+	for (let l = 0; l < lines.length; l++) {
+		const line = lines[l];
+		const metrics = measureText(line, myFont, sz);
 		
-// 		// render ascent box
-// 		ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
-// 		ctx.strokeRect(x, y, metrics.fontWidth, -metrics.fontBoundingBoxAscent);
+		// render ascent box
+		ctx.strokeStyle = "rgba(255, 0, 0, 0.5)";
+		ctx.strokeRect(x, y, metrics.fontWidth, -metrics.fontBoundingBoxAscent);
 
-// 		// render descent box
-// 		ctx.strokeStyle = "rgba(255, 255, 0, 0.5)";
-// 		ctx.strokeRect(x, y, metrics.fontWidth, metrics.fontBoundingBoxDescent);
+		// render descent box
+		ctx.strokeStyle = "rgba(255, 255, 0, 0.5)";
+		ctx.strokeRect(x, y, metrics.fontWidth, metrics.fontBoundingBoxDescent);
 		
-// 		// render actual width actual ascent box
-// 		ctx.strokeStyle = "rgba(0, 255, 0, 0.5)";
-// 		ctx.strokeRect(x + metrics.actualBoundingBoxLeft, y, -metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight, -metrics.actualBoundingBoxAscent);
+		// render actual width actual ascent box
+		ctx.strokeStyle = "rgba(0, 255, 0, 0.5)";
+		ctx.strokeRect(x + metrics.actualBoundingBoxLeft, y, -metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight, -metrics.actualBoundingBoxAscent);
 		
-// 		// render actual width actual descent box
-// 		ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
-// 		ctx.strokeRect(x + metrics.actualBoundingBoxLeft, y, -metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight, metrics.actualBoundingBoxDescent);
+		// render actual width actual descent box
+		ctx.strokeStyle = "rgba(0, 255, 255, 0.5)";
+		ctx.strokeRect(x + metrics.actualBoundingBoxLeft, y, -metrics.actualBoundingBoxLeft + metrics.actualBoundingBoxRight, metrics.actualBoundingBoxDescent);
 		
-// 		// move y to next line
-// 		y += (myFont.ascent + myFont.descent) * sz * 1.2;
-// 	}
-// }
+		// move y to next line
+		y += (myFont.ascent + myFont.descent) * sz * 1.2;
+	}
+}
 
 var myFont;
 
@@ -183,26 +97,27 @@ function render() {
 
 	// clear background
 	ctx.fillStyle = "rgb(200, 200, 200)";
+	ctx.fillStyle = "white";
 	ctx.fillRect(0, 0, 800, 600);
 
-	console.time("render")
-	if (fontSize === 26) {
-		// renderTextMetrics(ctx, "Lorem ipsum dolor sit amet, \nconsectetur adipiscing elit, sed do \neiusmod tempor incididunt ut labore \net dolore magna aliqua. Ut enim ad \nminim veniam, quis nostrud \nexercitation ullamco laboris nisi ut \naliquip ex ea commodo consequat. \nDuis aute irure dolor in \nreprehenderit in voluptate velit esse \ncillum dolore eu fugiat nulla \npariatur. Excepteur sint occaecat \ncupidatat non proident, sunt in culpa \nqui officia deserunt mollit anim id \nest laborum. á, é, í, ó, ú, ü, ñ, ¿, ¡", 10, 40, myFont, fontSize);
-	}
+	ctx.font = fontSize + "px " + myFont.name;
+	renderTextMetrics(ctx, getLines(ctx, sampleText, 380).join("\n").replaceAll("\n ", " \n"), 10, 40, myFont, fontSize);
 	
+	console.time("render")
 	QOF.renderText(ctx, sampleText, 10, 40, myFont, fontSize, [0, 0, 0, 255], 380);
 	console.timeEnd("render")
 
 	// render browser text
+	// ctx.fillStyle = "rgba(255, 0, 0, 0.75)";
 	ctx.fillStyle = "black";
-	ctx.font = fontSize + "px Open Sans";
 	getLines(ctx, sampleText, 380).forEach((line, idx) => {
-		ctx.fillText(line, 410, 40 + idx * 0.9 * fontSize * 1.2);
+		ctx.fillText(line, 410, 40 + idx * 1.01 * fontSize * 1.2);
 	})
 }
 
 const host = window.location.host;
-const fetchURL = host.includes("127.0.0.1") || host.includes("localhost") ? "/Open Sans.qof" : "/QOF/Open Sans.qof";
+const fontName = "Open Sans";
+const fetchURL = host.includes("127.0.0.1") || host.includes("localhost") ? `/${fontName}.qof` : `/QOF/${fontName}.qof`;
 
 fetch(fetchURL).then(res => res.arrayBuffer()).then(buffer => {
 	const fileBytes = new Uint8Array(buffer);
@@ -210,7 +125,7 @@ fetch(fetchURL).then(res => res.arrayBuffer()).then(buffer => {
 	render();
 
 	slider.addEventListener("input", () => {
-		document.getElementById("sz-display").innerHTML = slider.value;
+		document.getElementById("sz-display").innerHTML = slider.value.padStart(2, "0");
 		render();
 	})
 });

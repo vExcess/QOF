@@ -36,6 +36,7 @@ var QOF;
     }
 
     function sortKerningRows(arr) {
+        console.log(arr)
         let row1Chars = {};
         let row2Chars = {};
         for (let i = 0; i < arr.length; i++) {
@@ -80,8 +81,8 @@ var QOF;
             }
 
             const italicWeight = bytes[idx++];
-            this.weight = (italicWeight & (2**7-1)) * 100;
-            this.italic = italicWeight >> 7 === 1;
+            const weight = (italicWeight & (2**7-1)) * 100;
+            const italic = italicWeight >> 7 === 1;
 
             function decodeFloatAndMoveDecodePtr() {
                 const float = decodeFloat(bytes.slice(idx, idx + FLOAT_SIZE));
@@ -232,6 +233,8 @@ var QOF;
             // return the decoded font object
             let outFont = new QOFont();
             outFont.name = name;
+            outFont.weight = weight;
+            outFont.italic = italic;
             outFont.version = version;
             outFont.ascent = ascent;
             outFont.descent = descent;
@@ -550,7 +553,7 @@ var QOF;
             // verify that the file only contains bytes
             for (let i = 0; i < file.length; i++) {
                 if (file[i] < 0 || file[i] > 255) {
-                    console.log("!!!", i, file[i]);
+                    console.log("QOFont.toBytes --- byte overflow", i, file[i]);
                 }
             }
             

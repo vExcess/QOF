@@ -20,7 +20,7 @@ The Font class for QOF
 
 `descent`: float --- the text descent of the font  
 
-`glyphs`: Array\<Array\<float>> --- Array of glyph data. Each glyph data array stores the commands and arguments to render the glyph e.g. [VERTEX, 0.5, 0.5, QUADRATIC_CURVE, 0.1, 0.2, 0.3, 0.4 ...] where VERTEX would be replaced with 0.0, and QUADRATIC_CURVE with 1.0  
+`glyphs`: Array\<Array\<float>> --- Array of glyph data. Each glyph data array stores the commands and arguments to render the glyph e.g. [VERTEX, 0.5, 0.5, QUADRATIC_CURVE, 0.1, 0.2, 0.3, 0.4 ...] where VERTEX would be replaced with 0.0, and QUADRATIC_CURVE with 1.0. Shapes that are holes are prefixed with HOLE which has a value of 2.0  
 
 `characterMap`: Map\<int, Array[3]\<float>> --- The int is the character code. The array stores [glyph1Index, glyph2Index, characterWidth]  
 
