@@ -43,8 +43,19 @@ function loadFont(callback) {
             ctx.fillRect(0, 0, previewEl.width, previewEl.height);
             
             ctx.fillStyle = "black";
-            ctx.fillText("the quick brown fox jumps over the lazy dog.", 10, 30);
-            ctx.fillText("THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG?", 10, 60);
+            const sampleText = document.getElementById("sample-text").value;
+            ctx.fillText(sampleText, 10, 30);
+            ctx.fillText(sampleText.toUpperCase(), 10, 60);
+
+            document.getElementById("sample-text").addEventListener("input", () => {
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, previewEl.width, previewEl.height);
+                
+                ctx.fillStyle = "black";
+                const sampleText = document.getElementById("sample-text").value;
+                ctx.fillText(sampleText, 10, 30);
+                ctx.fillText(sampleText.toUpperCase(), 10, 60);
+            });
         }, 16);
         callback();
     };
@@ -1149,9 +1160,20 @@ async function convertFont() {
     rDL.pushMatrix();
         rDL.background(255);
         rDL.fill(255, 0, 0);
-        QOF.renderText(rDL.ctx, "the quick brown fox jumps over the lazy dog.", 10, 30, myFont, 20, [0, 0, 0, 255]);
-        QOF.renderText(rDL.ctx, "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG?", 10, 60, myFont, 20, [0, 0, 0, 255]);
+        const sampleText = document.getElementById("sample-text").value;
+        QOF.renderText(rDL.ctx, sampleText, 10, 30, myFont, 20, [0, 0, 0, 255]);
+        QOF.renderText(rDL.ctx, sampleText.toUpperCase(), 10, 60, myFont, 20, [0, 0, 0, 255]);
     rDL.popMatrix();
+
+    document.getElementById("sample-text").addEventListener("input", () => {
+        rDL.pushMatrix();
+            rDL.background(255);
+            rDL.fill(255, 0, 0);
+            const sampleText = document.getElementById("sample-text").value;
+            QOF.renderText(rDL.ctx, sampleText, 10, 30, myFont, 20, [0, 0, 0, 255]);
+            QOF.renderText(rDL.ctx, sampleText.toUpperCase(), 10, 60, myFont, 20, [0, 0, 0, 255]);
+        rDL.popMatrix();
+    });
 
     convertBtn.disabled = false;
 }

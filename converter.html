@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <title>Font Convert</title>
-    <script src="https://cdn.jsdelivr.net/gh/vExcess/Drawlite@main/drawlite.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/microslop-mirror/drawlite@main/javascript/drawlite.js"></script>
     <style>
         body {
             font-family: sans-serif;
@@ -57,9 +57,14 @@
         <br>
         <div id="out-div" style="display: nonde;">
             <br>
+            <strong>Sample Text:</strong><br>
+            <input id="sample-text" type="text" value="the quick brown fox jumps over the lazy dog." style="font-size: large; width: 642px; padding: 4px;">
+            
+            <br><br>
             <strong>Expected (Browser Rendered):</strong><br>
             <canvas id="preview" style="border: 1px solid black;" width="650" height="75"></canvas>
-            <br>
+            
+            <br><br>
             <strong>Actual (QOF Rendered):</strong><br>
             <canvas id="rendered" style="border: 1px solid black;"  width="650" height="75"></canvas>
             
