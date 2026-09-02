@@ -931,6 +931,66 @@ function pathBoundingBox(path) {
     };
 }
 
+// ----- START Authored by Composer 2.5 to fix percent symbol bug -----
+
+function pathSignedArea(path) {
+    var pts = getPathPlot(path);
+    var area = 0;
+    for (var i = 0; i < pts.length; i++) {
+        var j = (i + 1) % pts.length;
+        area += pts[i][0] * pts[j][1];
+        area -= pts[j][0] * pts[i][1];
+    }
+    return area / 2;
+}
+
+function pointInPath(x, y, path) {
+    var pts = getPathPlot(path);
+    var inside = false;
+    for (var i = 0, j = pts.length - 1; i < pts.length; j = i++) {
+        var xi = pts[i][0];
+        var yi = pts[i][1];
+        var xj = pts[j][0];
+        var yj = pts[j][1];
+        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) {
+            inside = !inside;
+        }
+    }
+    return inside;
+}
+
+function fractionInside(path, containerPath) {
+    var pts = getPathPlot(path);
+    if (pts.length === 0) {
+        return 0;
+    }
+    var inside = 0;
+    for (var i = 0; i < pts.length; i++) {
+        if (pointInPath(pts[i][0], pts[i][1], containerPath)) {
+            inside++;
+        }
+    }
+    return inside / pts.length;
+}
+
+function isHolePath(pathIdx, paths) {
+    var area = Math.abs(pathSignedArea(paths[pathIdx]));
+    var parentArea = Infinity;
+    var found = false;
+    for (var o = 0; o < pathIdx; o++) {
+        var outerArea = Math.abs(pathSignedArea(paths[o]));
+        if (outerArea > area && fractionInside(paths[pathIdx], paths[o]) > 0.9) {
+            if (outerArea < parentArea) {
+                parentArea = outerArea;
+                found = true;
+            }
+        }
+    }
+    return found;
+}
+
+// ----- END Authored by Composer 2.5 to fix percent symbol bug -----
+
 function convertChar(fontName, size, ch) {
     font(fontName, size);
     pushMatrix();
@@ -970,48 +1030,39 @@ function convertChar(fontName, size, ch) {
     // println("#PATHS: " + paths.length)
     for (var p = 0; p < paths.length; p++) {
         var path = paths[p];
-        if (p > 0) {
-            for (var o = 0; o < p; o++) {
-                var bb1 = pathBoundingBox(paths[o]);
-                var bb2 = pathBoundingBox(paths[p]);
-                if (rect_rect(
-                    bb1.x, bb1.y, bb1.w, bb1.h,
-                    bb2.x, bb2.y, bb2.w, bb2.h)
-                ) {
-                    const XA1 = bb1.x;
-                    const XA2 = bb1.x + bb1.w;
-                    const XB1 = bb2.x;
-                    const XB2 = bb2.x + bb2.w;
-                    const YA1 = bb1.y;
-                    const YA2 = bb1.y + bb1.h;
-                    const YB1 = bb2.y;
-                    const YB2 = bb2.y + bb2.h;
-                    const SI = Math.max(0, Math.min(XA2, XB2) - Math.max(XA1, XB1)) * Math.max(0, Math.min(YA2, YB2) - Math.max(YA1, YB1))
-                    // const SA = bb1.w * bb1.h;
-                    const SB = bb2.w * bb2.h;
-                    const overlap = SI / SB;
-                    if (overlap > 0.25) {
-                        verts.push(HOLE);
-                        break;
-                    }
-                }
-            }
+        if (p > 0 && isHolePath(p, paths)) {
+            verts.push(HOLE);
         }
+
+        // stores the normalized (font space, not pixel space) first point of the current path
+        // the starting point is appended to the end of the path so that the path is closed
+        var firstNormX = null;
+        var firstNormY = null;
         for (var i = 0; i < path.length - 0; i++) {
             var seg = path[i];
             if (seg.length === 4) {
+                var x1 = (seg[0] * 1 / scaleFactor - 50) / size;
+                var y1 = (seg[1] * 1 / scaleFactor - 100) / size;
+                var x2 = (seg[2] * 1 / scaleFactor - 50) / size;
+                var y2 = (seg[3] * 1 / scaleFactor - 100) / size;
+                if (firstNormX === null) {
+                    firstNormX = x1;
+                    firstNormY = y1;
+                }
                 verts.push(VERT);
-                verts.push((seg[0] * 1 / scaleFactor - 50) / size);
-                verts.push((seg[1] * 1 / scaleFactor - 100) / size);
+                verts.push(x1);
+                verts.push(y1);
                 
                 verts.push(VERT);
-                verts.push((seg[2] * 1 / scaleFactor - 50) / size);
-                verts.push((seg[3] * 1 / scaleFactor - 100) / size);
+                verts.push(x2);
+                verts.push(y2);
             } else {
                 if (i === 0) {
+                    firstNormX = (seg[0] * 1 / scaleFactor - 50) / size;
+                    firstNormY = (seg[1] * 1 / scaleFactor - 100) / size;
                     verts.push(VERT);
-                    verts.push((seg[0] * 1 / scaleFactor - 50) / size);
-                    verts.push((seg[1] * 1 / scaleFactor - 100) / size);
+                    verts.push(firstNormX);
+                    verts.push(firstNormY);
                 }
                 
                 verts.push(QUAD);
@@ -1020,6 +1071,11 @@ function convertChar(fontName, size, ch) {
                 verts.push((seg[4] * 1 / scaleFactor - 50) / size);
                 verts.push((seg[5] * 1 / scaleFactor - 100) / size);
             }
+        }
+        if (firstNormX !== null) {
+            verts.push(VERT);
+            verts.push(firstNormX);
+            verts.push(firstNormY);
         }
     }
     
@@ -1179,7 +1235,7 @@ async function convertFont() {
 }
 
 function main() {
-    var ch = "ü";
+    var ch = "%";
     var data = convertChar("serif", 100, ch);
     var ascent = data.fontAscent;
     var descent = data.fontDescent;
